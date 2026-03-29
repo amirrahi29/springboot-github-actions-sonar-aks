@@ -1,6 +1,4 @@
-# Dev — git branch `dev` → CI namespace `dev` → image tag `dev-<sha>` → yeh file: helm/values-dev.yaml
-# Push `dev` par: .github/workflows/chat-app.yml → ACR → helm upgrade -f helm/values-dev.yaml
-
+# branch dev → namespace dev → helm/values-dev.yaml
 replicaCount: 1
 
 resources:
