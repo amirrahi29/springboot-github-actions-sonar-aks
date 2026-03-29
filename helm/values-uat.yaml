@@ -1,30 +1,15 @@
-# uat → namespace uat
-replicaCount: 1
+replicaCount: 2
 
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-  requests:
-    cpu: 100m
-    memory: 256Mi
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: uat
 
 podAnnotations:
   environment: uat
 
-service:
-  type: LoadBalancer
-
 ingress:
-  enabled: false
-  className: nginx
   hosts:
     - host: app-uat.mergeai.in
       paths:
         - path: /
           pathType: Prefix
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3

@@ -1,5 +1,7 @@
 plugins {
 	id 'java'
+	id 'jacoco'
+	id 'org.sonarqube' version '6.2.0.5505'
 	id 'org.springframework.boot' version '4.0.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -27,4 +29,30 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}
+
+jacoco {
+	toolVersion = '0.8.12'
+}
+
+tasks.named('jacocoTestReport', JacocoReport) {
+	dependsOn test
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
+
+def sonarEnv = { String key, String defaultValue ->
+	System.getenv(key)?.trim() ?: defaultValue
+}
+
+sonar {
+	properties {
+		property 'sonar.projectKey', sonarEnv('SONAR_PROJECT_KEY', 'chat-app')
+		property 'sonar.projectName', sonarEnv('SONAR_PROJECT_NAME', 'Chat-App')
+		property 'sonar.coverage.jacoco.xmlReportPaths',
+				"${layout.buildDirectory.get().asFile}/reports/jacoco/test/jacocoTestReport.xml"
+	}
 }
