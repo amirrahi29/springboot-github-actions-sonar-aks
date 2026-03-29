@@ -21,7 +21,7 @@ ingress:
   hosts:
     - host: app-dev.mergeai.in
       paths:
-        - path: /
+        - path: / 
           pathType: Prefix
 
 autoscaling:
