@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: chatappregsistry.azurecr.io/chat-app
@@ -33,11 +33,14 @@ resources:
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 4
+  maxReplicas: 3
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: ""
 
 podAnnotations: {}
+
+env: []
+
 nodeSelector: {}
 tolerations: []
 affinity: {}
