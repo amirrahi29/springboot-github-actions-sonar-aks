@@ -1,8 +1,3 @@
-# Multi-env: branch name = Kubernetes namespace = helm/values-<branch>.yaml (sirf wahi env update)
-#   push `dev`      → namespace dev      → helm/values-dev.yaml
-#   push `staging`  → namespace staging  → helm/values-staging.yaml  (UAT namespace par asar NAHI)
-#   push `uat`      → namespace uat      → helm/values-uat.yaml
-# Prereqs: AZURE_CREDENTIALS; AKS pull from ACR (e.g. --attach-acr)
 name: Build, Push & Deploy to AKS
 
 on:
@@ -20,89 +15,44 @@ env:
   AKS_RESOURCE_GROUP: ChatResourceGroup
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.meta.outputs.image_tag }}
-      namespace: ${{ steps.meta.outputs.namespace }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Azure Login
-        uses: azure/login@v2
+      - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set image tag and namespace
-        id: meta
+      - name: Image tag and namespace
         run: |
-          BRANCH=${GITHUB_REF#refs/heads/}
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          echo "IMAGE_TAG=${BRANCH}-${SHORT_SHA}" >> $GITHUB_ENV
-          echo "image_tag=${BRANCH}-${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "namespace=${BRANCH}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${GITHUB_REF_NAME}-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "DEPLOY_NAMESPACE=${GITHUB_REF_NAME}" >> $GITHUB_ENV
 
-      - name: Login to ACR
-        run: az acr login --name $ACR_NAME
+      - run: az acr login --name $ACR_NAME
 
-      - name: Build image (Spring Boot)
+      - name: Docker build and push
         run: |
-          echo "Building: $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"
-          docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
+          IMG="$ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"
+          docker build -t "$IMG" .
+          docker push "$IMG"
 
-      - name: Push image to ACR
-        run: "docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"
-
-      - name: Image summary
-        run: |
-          echo "Pushed: $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-and-push
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Set AKS kubeconfig
-        uses: azure/aks-set-context@v3
+      - uses: azure/aks-set-context@v3
         with:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
-      - name: Install Helm
-        uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v4
         with:
           version: v3.14.4
 
-      - name: Helm upgrade (chat-app)
+      - name: Helm upgrade
         run: |
-          NS='${{ needs.build-and-push.outputs.namespace }}'
-          VALUES_FILE="helm/values-${NS}.yaml"
-          if [ ! -f "$VALUES_FILE" ]; then
-            echo "ERROR: Missing $VALUES_FILE — add helm/values-${NS}.yaml for this branch."
-            exit 1
-          fi
-          echo "Deploying release chat-app to namespace: $NS (values: $VALUES_FILE)"
+          test -f "helm/values-${DEPLOY_NAMESPACE}.yaml"
           helm upgrade --install chat-app ./helm \
-            --namespace "$NS" \
+            --namespace "$DEPLOY_NAMESPACE" \
             --create-namespace \
-            -f "$VALUES_FILE" \
-            --set image.repository=${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ needs.build-and-push.outputs.image_tag }} \
+            -f "helm/values-${DEPLOY_NAMESPACE}.yaml" \
+            --set image.repository=$ACR_NAME.azurecr.io/$IMAGE_NAME \
+            --set image.tag=$IMAGE_TAG \
             --wait --timeout 5m
-
-      - name: Deploy summary
-        run: |
-          echo "Namespace: ${{ needs.build-and-push.outputs.namespace }}"
-          echo "Values: helm/values-${{ needs.build-and-push.outputs.namespace }}.yaml"
-          echo "Chart: ./helm | Release: chat-app"
-          echo "Tag: ${{ needs.build-and-push.outputs.image_tag }}"
