@@ -14,18 +14,14 @@ import com.chat.app.api.PingResponse;
 @SpringBootTest
 class ChatAppApplicationTests {
 
+	private static final String APP_NAME = "Chat-App";
+
 	@Autowired
 	private PingController pingController;
 
 	@Test
-	void contextLoads() {
-		assertThat(pingController).isNotNull();
-	}
-
-	@Test
-	void defaultProfileUsesLocalEnvironment() {
-		assertThat(pingController.ping())
-				.isEqualTo(new PingResponse("ok", "Chat-App", "local"));
+	void defaultProfileServesLocalEnvironmentOnPing() {
+		assertPing(pingController, "local");
 	}
 
 	@Nested
@@ -37,9 +33,8 @@ class ChatAppApplicationTests {
 		private PingController ping;
 
 		@Test
-		void loadsStagingEnvironmentFromProfile() {
-			assertThat(ping.ping())
-					.isEqualTo(new PingResponse("ok", "Chat-App", "staging"));
+		void activeProfileReflectsInPing() {
+			assertPing(ping, "staging");
 		}
 	}
 
@@ -52,9 +47,12 @@ class ChatAppApplicationTests {
 		private PingController ping;
 
 		@Test
-		void loadsUatEnvironmentFromProfile() {
-			assertThat(ping.ping())
-					.isEqualTo(new PingResponse("ok", "Chat-App", "uat"));
+		void activeProfileReflectsInPing() {
+			assertPing(ping, "uat");
 		}
+	}
+
+	private static void assertPing(PingController controller, String environment) {
+		assertThat(controller.ping()).isEqualTo(new PingResponse("ok", APP_NAME, environment));
 	}
 }
