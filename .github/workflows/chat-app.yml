@@ -32,6 +32,8 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_PROJECT_KEY: chat-app-${{ github.ref_name }}
+          SONAR_PROJECT_NAME: Chat-App ${{ github.ref_name }}
         run: |
           ./gradlew test sonar --no-daemon \
             -Dsonar.host.url="$SONAR_HOST_URL" \

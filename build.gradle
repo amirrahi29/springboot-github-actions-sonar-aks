@@ -46,8 +46,14 @@ tasks.named('jacocoTestReport', JacocoReport) {
 
 sonar {
 	properties {
-		property 'sonar.projectKey', 'chat-app'
-		property 'sonar.projectName', 'Chat-App'
+		def pk = System.getenv('SONAR_PROJECT_KEY')?.trim()
+		property 'sonar.projectKey', pk ? pk : 'chat-app'
+		def pn = System.getenv('SONAR_PROJECT_NAME')?.trim()
+		property 'sonar.projectName', pn ? pn : 'Chat-App'
 		property 'sonar.coverage.jacoco.xmlReportPaths', "${layout.buildDirectory.get().asFile}/reports/jacoco/test/jacocoTestReport.xml"
+		def branch = System.getenv('GITHUB_REF_NAME')?.trim()
+		if (branch) {
+			property 'sonar.branch.name', branch
+		}
 	}
 }
