@@ -9,4 +9,12 @@
         --role Contributor \
         --scopes /subscriptions/dde8a869-f29f-41ae-90ea-0047779211e6 \
         --sdk-auth
+
+
+# Github secret and variables (get from azure and sonarcube which deployed in azure)
+
+       AZURE_CREDENTIALS
+
+       SONAR_HOST_URL
+       SONAR_TOKEN
 ```
