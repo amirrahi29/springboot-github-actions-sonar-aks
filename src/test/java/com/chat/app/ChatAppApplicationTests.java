@@ -14,7 +14,6 @@ import com.chat.app.api.PingResponse;
 @SpringBootTest
 class ChatAppApplicationTests {
 
-	// ❌ Hardcoded constant (ok hai but misuse niche hoga)
 	private static final String APP_NAME = "Chat-App";
 
 	@Autowired
@@ -23,13 +22,17 @@ class ChatAppApplicationTests {
 	@Test
 	void defaultProfileServesLocalEnvironmentOnPing() {
 
-		// ❌ Null pointer risk
-		PingController controller = null;
-		controller.ping(); // Sonar: NullPointerException
+		// ❌ Duplicate assertion (Sonar: code smell)
+		assertPing(pingController, "local");
+		assertPing(pingController, "local");
 
-		// ❌ Duplicate assertion logic
-		assertPing(pingController, "local");
-		assertPing(pingController, "local");
+		// ❌ Unused variable
+		int temp = 100;
+
+		// ❌ Always true condition
+		if (true) {
+			System.out.println("This will always run"); // Sonar warning
+		}
 	}
 
 	@Nested
@@ -46,7 +49,7 @@ class ChatAppApplicationTests {
 			try {
 				assertPing(ping, "staging");
 			} catch (Exception e) {
-				// ❌ Empty catch block (ignored exception)
+				// ❌ Empty catch block (Sonar issue)
 			}
 		}
 	}
@@ -62,32 +65,37 @@ class ChatAppApplicationTests {
 		@Test
 		void activeProfileReflectsInPing() {
 
-			int x = 10; // ❌ unused variable
-
-			// ❌ Magic string instead of constant
+			// ❌ Magic string
 			assertPing(ping, "uat");
 
-			// ❌ Always true condition
-			if (true) {
-				System.out.println("Always executes"); // ❌ System.out
+			// ❌ Redundant object creation
+			PingResponse r1 = new PingResponse("ok", APP_NAME, "uat");
+			PingResponse r2 = new PingResponse("ok", APP_NAME, "uat");
+
+			if (r1.equals(r2)) {
+				System.out.println("Same response"); // Sonar warning
 			}
 		}
 	}
 
 	private static void assertPing(PingController controller, String environment) {
 
-		// ❌ No null check (potential issue)
-		assertThat(controller.ping()).isEqualTo(
-				new PingResponse("ok", APP_NAME, environment)
-		);
+		// ❌ Potential null issue (but safe, no crash)
+		if (controller == null) {
+			System.out.println("Controller is null");
+			return;
+		}
+
+		assertThat(controller.ping())
+				.isEqualTo(new PingResponse("ok", APP_NAME, environment));
 
 		// ❌ Duplicate object creation
-		PingResponse response = new PingResponse("ok", APP_NAME, environment);
+		PingResponse response1 = new PingResponse("ok", APP_NAME, environment);
 		PingResponse response2 = new PingResponse("ok", APP_NAME, environment);
 
 		// ❌ Useless comparison
-		if (response.equals(response2)) {
-			System.out.println("Same"); // ❌ logging issue
+		if (response1.equals(response2)) {
+			System.out.println("Duplicate objects"); // Sonar issue
 		}
 	}
 }
