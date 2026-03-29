@@ -1,6 +1,6 @@
-# Multi-env: push branch dev | staging | uat → build Spring Boot image → ACR → Helm deploy to AKS
-# Prereqs: GitHub secret AZURE_CREDENTIALS (service principal JSON), ACR name below, AKS can pull from ACR
-#   (e.g. az aks update -n <cluster> -g <rg> --attach-acr <acrName>)
+# Multi-env: branch name = Kubernetes namespace = helm/values-<branch>.yaml
+#   e.g. push `uat` → namespace `uat` → -f helm/values-uat.yaml (only that env is updated)
+# Prereqs: AZURE_CREDENTIALS secret; AKS pull from ACR (e.g. --attach-acr)
 name: Build, Push & Deploy to AKS
 
 on:
@@ -11,6 +11,7 @@ on:
       - uat
 
 env:
+  DOCKER_BUILDKIT: 1
   ACR_NAME: chatappregsistry
   IMAGE_NAME: chat-app
   AKS_CLUSTER_NAME: ChatAppCluster
@@ -83,10 +84,16 @@ jobs:
       - name: Helm upgrade (chat-app)
         run: |
           NS='${{ needs.build-and-push.outputs.namespace }}'
+          VALUES_FILE="helm/values-${NS}.yaml"
+          if [ ! -f "$VALUES_FILE" ]; then
+            echo "ERROR: Missing $VALUES_FILE — add helm/values-${NS}.yaml for this branch."
+            exit 1
+          fi
+          echo "Deploying release chat-app to namespace: $NS (values: $VALUES_FILE)"
           helm upgrade --install chat-app ./helm \
             --namespace "$NS" \
             --create-namespace \
-            -f "helm/values-${NS}.yaml" \
+            -f "$VALUES_FILE" \
             --set image.repository=${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }} \
             --set image.tag=${{ needs.build-and-push.outputs.image_tag }} \
             --wait --timeout 5m
@@ -94,5 +101,6 @@ jobs:
       - name: Deploy summary
         run: |
           echo "Namespace: ${{ needs.build-and-push.outputs.namespace }}"
+          echo "Values: helm/values-${{ needs.build-and-push.outputs.namespace }}.yaml"
           echo "Chart: ./helm | Release: chat-app"
           echo "Tag: ${{ needs.build-and-push.outputs.image_tag }}"
