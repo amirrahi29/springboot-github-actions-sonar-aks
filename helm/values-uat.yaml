@@ -1,6 +1,4 @@
-# UAT — git branch `uat` only → AKS namespace `uat` → image tag `uat-<sha>` → THIS file (helm/values-uat.yaml)
-# CI: push to `uat` runs .github/workflows/chat-app.yml → helm upgrade -n uat -f helm/values-uat.yaml
-
+# uat → namespace uat
 replicaCount: 1
 
 resources:

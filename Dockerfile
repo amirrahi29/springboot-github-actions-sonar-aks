@@ -1,4 +1,3 @@
-# Build Spring Boot executable JAR (Gradle wrapper — reproducible)
 FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 
@@ -6,12 +5,10 @@ COPY gradle gradle
 COPY gradlew build.gradle settings.gradle ./
 COPY src src
 
-# Two jars: *-plain.jar (thin) + fat boot jar — pick the boot jar only
 RUN chmod +x gradlew \
 	&& ./gradlew bootJar --no-daemon -x test \
 	&& find build/libs -maxdepth 1 -name '*.jar' ! -name '*-plain.jar' -exec cp {} /app/app.jar \;
 
-# Runtime — small JRE image
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
