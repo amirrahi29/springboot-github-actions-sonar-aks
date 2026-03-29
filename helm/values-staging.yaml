@@ -1,6 +1,5 @@
-# Staging — git branch `staging` → CI namespace `staging` → image tag `staging-<sha>` → yeh file: helm/values-staging.yaml
-# Push `staging` par: .github/workflows/chat-app.yml → ACR → helm upgrade -f helm/values-staging.yaml
-# (Dev jaisa sizing: 1 pod, halki resources)
+# Staging — git branch `staging` only → AKS namespace `staging` → tag `staging-<sha>` → THIS file (helm/values-staging.yaml)
+# CI: push to `staging` runs .github/workflows/chat-app.yml → helm upgrade -n staging -f helm/values-staging.yaml
 
 replicaCount: 1
 
